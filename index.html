@@ -70,8 +70,8 @@ a{color:var(--velhas)}
 </section>
 
 <section class="card">
-  <h3>Chuva e nível em Caeté (bacia do Rio Sabará): últimas 72 horas</h3>
-  <p class="muted" style="margin:0">O Rio Sabará enche rápido, 2 a 4 horas depois de chuva forte nesta região. Não há sensor funcionando no Rio Sabará dentro de Sabará; Caeté é o sinal mais próximo.</p>
+  <h3>Rio Sabará na ponte da Av. Longitudinal: últimas 72 horas</h3>
+  <p class="muted" style="margin:0">Sensor do Cemaden dentro de Sabará. As linhas tracejadas são as cotas oficiais do Cemaden para este ponto. As barras são a chuva por hora em Caeté, na cabeceira: o Rio Sabará costuma subir 2 a 4 horas depois de chuva forte lá.</p>
   <div id="gsabara"></div>
 </section>
 
@@ -81,7 +81,7 @@ a{color:var(--velhas)}
 </section>
 
 <footer>
-  <div>Dados: ANA (Agência Nacional de Águas), estações telemétricas 41195050 Rio Acima, 41200430 Raposos e 41210001 Caeté. Coleta automática a cada 15 minutos; a ANA costuma publicar com 30 a 60 minutos de atraso. A página se atualiza sozinha a cada 5 minutos.</div>
+  <div>Dados: ANA (Agência Nacional de Águas), estações telemétricas 41195050 Rio Acima, 41200430 Raposos e 41210001 Caeté; e Cemaden, estação hidrológica 315670023H Ribeirão Sabará (Av. Longitudinal). Coleta automática a cada 15 minutos; a ANA costuma publicar com 30 a 60 minutos de atraso e o Cemaden envia o nível de hora em hora fora de eventos. A página se atualiza sozinha a cada 5 minutos.</div>
   <div>Painel desenvolvido por <strong>Simone de Figueiredo Cunha</strong> com auxílio de IA.</div>
 </footer>
 </div>
@@ -101,13 +101,13 @@ function cards(sit,res){
   const box=document.getElementById('cards');box.innerHTML='';
   const by=Object.fromEntries(res.map(r=>[r.codigo,r]));
   for(const s of sit){
-    const velhas=s.rio==='Rio das Velhas', ref=velhas?by['41200430']:by['41210001'];
+    const velhas=s.rio==='Rio das Velhas', ref=velhas?by['41200430']:(s.onde&&s.onde.includes('Cemaden')?by['315670023H']:by['41210001']);
     const c=document.createElement('section');c.className='card rio';
     c.style.setProperty('--c',css(CORES[s.nivel_alerta]||'--s0'));
     const varr=s.variacao_3h_cm;
     const tend=varr==null?'—':(varr>5?'subindo ':varr<-5?'descendo ':'estável ')+'('+(varr>0?'+':'')+fmt(varr/100)+' m em 3 h)';
     c.innerHTML=`<h2>${s.rio}</h2><span class="badge"></span>
-      <div class="big">${fmt(s.nivel_referencia_cm/100)} m <small>${velhas?'em Raposos':'em Caeté'}</small></div>
+      <div class="big">${fmt(s.nivel_referencia_cm/100)} m <small>${s.onde||''}</small></div>
       <dl class="kv"><dt>Tendência</dt><dd>${tend}</dd>
       <dt>Chuva 6 h / 24 h</dt><dd>${fmt(ref?.chuva_6h,0)} / ${fmt(ref?.chuva_24h,0)} mm</dd>
       <dt>Última leitura</dt><dd>${hora(s.ultima_leitura)}</dd></dl>
@@ -140,7 +140,7 @@ function grafico(host,serie,opt){
     const bw=(W-L-R)/72*0.8;
     Object.entries(hrs).forEach(([k,v])=>{const h=v/cm*chh;el('rect',{x:x(k*3600e3)-bw/2,y:cy0+chh-h,width:bw,height:h,fill:css('--chuva'),rx:1},svg);});
     el('line',{x1:L,x2:W-R,y1:cy0+chh,y2:cy0+chh,stroke:css('--grid')},svg);
-    const t2=el('text',{x:W-R+6,y:cy0+12},svg);t2.textContent='Chuva por hora';
+    const t2=el('text',{x:W-R+6,y:cy0+12},svg);t2.textContent=opt.chuvaLab||'Chuva por hora';
     const t=el('text',{x:W-R+6,y:cy0+26},svg);t.textContent='(máx. '+fmt(cm,0)+' mm)';
   }
   if(!nv.length){const t=el('text',{x:W/2,y:T+ch/2,'text-anchor':'middle'},svg);t.textContent='Sem leituras nas últimas 72 h';}
@@ -161,13 +161,16 @@ async function carregar(){
       api('situacao_rios?select=*'),
       api('ana_resumo?select=*'),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41200430&datahora=gte.${desde}&order=datahora`),
-      api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41210001&datahora=gte.${desde}&order=datahora`),
+      api(`ana_leituras?select=datahora,nivel_cm,chuva_mm,estacao&estacao=in.(41210001,315670023H)&datahora=gte.${desde}&order=datahora`),
       api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1')]);
     cards(sit,res);
     grafico(document.getElementById('gvelhas'),lr,{cor:'--velhas',ymin:500,titulo:'Nível do Rio das Velhas em Raposos nas últimas 72 horas',
       limites:[[450,'atenção','--s1'],[565,'Roças Grandes','--s2'],[670,'Caieira / Ponte','--s3']]});
-    grafico(document.getElementById('gsabara'),lc,{cor:'--sabara',ymin:150,chuva:true,titulo:'Chuva e nível em Caeté nas últimas 72 horas',
-      limites:[[237,'pico de dez/2022','--s2']]});
+    const sens=lc.filter(q=>q.estacao==='315670023H'&&q.nivel_cm!=null), cae=lc.filter(q=>q.estacao==='41210001');
+    const serieSab=(sens.length?sens.map(q=>({datahora:q.datahora,nivel_cm:q.nivel_cm,chuva_mm:null})):cae.map(q=>({datahora:q.datahora,nivel_cm:q.nivel_cm,chuva_mm:null}))).concat(cae.map(q=>({datahora:q.datahora,nivel_cm:null,chuva_mm:q.chuva_mm})));
+    serieSab.sort((x,y)=>new Date(x.datahora)-new Date(y.datahora));
+    grafico(document.getElementById('gsabara'),serieSab,{cor:'--sabara',ymin:sens.length?500:150,chuva:true,chuvaLab:'Chuva em Caeté',titulo:'Nível do Rio Sabará e chuva em Caeté nas últimas 72 horas',
+      limites:sens.length?[[269,'atenção','--s1'],[359,'alerta','--s2'],[448,'transbordamento','--s3']]:[[237,'pico de dez/2022','--s2']]});
     tabela(res);
     const ult=res.map(r=>r.ultima_leitura).filter(Boolean).sort().pop();
     const atraso=ult?(Date.now()-new Date(ult))/60000:Infinity;
