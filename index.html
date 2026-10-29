@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rio Agora · Sabará</title>
+<meta name="description" content="Nível do Rio das Velhas e chuva na bacia do Rio Sabará, atualizados a cada 15 minutos com dados da ANA.">
+<style>
+:root{--bg:#f3f4f6;--panel:#fff;--fg:#17202a;--muted:#5b6672;--line:#dde1e6;--grid:#e8ebef;
+ --velhas:#2a78d6;--sabara:#1baf7a;--chuva:#2a78d6;
+ --s0:#1baf7a;--s1:#eda100;--s2:#eb6834;--s3:#c4314b;
+ --f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--f-mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1418;--panel:#182027;--fg:#e8edf2;--muted:#9aa6b2;--line:#2a343d;--grid:#222b33;
+ --velhas:#3987e5;--sabara:#199e70;--chuva:#3987e5;--s0:#199e70;--s1:#c98500;--s2:#d95926;--s3:#e05570}}
+:root[data-theme="dark"]{--bg:#0f1418;--panel:#182027;--fg:#e8edf2;--muted:#9aa6b2;--line:#2a343d;--grid:#222b33;
+ --velhas:#3987e5;--sabara:#199e70;--chuva:#3987e5;--s0:#199e70;--s1:#c98500;--s2:#d95926;--s3:#e05570}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:18px}
+header h1{margin:2px 0 4px;font-size:28px;line-height:1.15}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--velhas)}
+.muted{color:var(--muted)}
+.status{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--s0);display:inline-block}
+.dot.stale{background:var(--s2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:10px;min-width:0}
+.rio{border-top:6px solid var(--c)}
+.rio h2{margin:0;font-size:19px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:15px;padding:3px 12px;border-radius:999px;color:#fff;background:var(--c);width:max-content}
+.big{font-family:var(--f-mono);font-size:30px;font-variant-numeric:tabular-nums;line-height:1.1}
+.big small{font-size:14px;color:var(--muted);font-family:var(--f-body)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-variant-numeric:tabular-nums}
+.motivo{font-size:14px;margin:0}
+h3{margin:0;font-size:17px}
+svg{width:100%;height:auto;display:block}
+svg text{font-size:11px;fill:var(--muted);font-family:var(--f-body)}
+svg .lab{fill:var(--fg);font-weight:600}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl{overflow-x:auto}
+.aviso{border-left:4px solid var(--s2);font-size:14px}
+.aviso p{margin:0}
+footer{font-size:13px;color:var(--muted);display:grid;gap:6px}
+a{color:var(--velhas)}
+.erro{color:var(--s3);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">Sabará · Rio das Velhas e Rio Sabará</div>
+  <h1>Como está o rio agora</h1>
+  <div class="status" id="status"><span class="dot" id="dot"></span><span id="stxt">Carregando…</span></div>
+</header>
+
+<section class="card aviso">
+  <p><strong>Informativo, não é alerta oficial.</strong> Os estágios abaixo são regras de partida tiradas das cheias de 2020 a 2026 e podem errar. Em caso de risco, siga a Defesa Civil: ligue <strong>199</strong> e cadastre seu CEP para receber alertas por SMS enviando o CEP para <strong>40199</strong>.</p>
+</section>
+
+<div class="cards" id="cards"></div>
+
+<section class="card">
+  <h3>Rio das Velhas em Raposos: últimas 72 horas</h3>
+  <p class="muted" style="margin:0">Raposos fica logo acima de Sabará. As linhas tracejadas são os níveis em que, nas cheias passadas, a água chegou a cada lugar.</p>
+  <div id="gvelhas"></div>
+</section>
+
+<section class="card">
+  <h3>Chuva e nível em Caeté (bacia do Rio Sabará): últimas 72 horas</h3>
+  <p class="muted" style="margin:0">O Rio Sabará enche rápido, 2 a 4 horas depois de chuva forte nesta região. Não há sensor funcionando no Rio Sabará dentro de Sabará; Caeté é o sinal mais próximo.</p>
+  <div id="gsabara"></div>
+</section>
+
+<section class="card">
+  <h3>Estações</h3>
+  <div class="tbl"><table id="tab"></table></div>
+</section>
+
+<footer>
+  <div>Dados: ANA (Agência Nacional de Águas), estações telemétricas 41195050 Rio Acima, 41200430 Raposos e 41210001 Caeté. Coleta automática a cada 15 minutos; a ANA costuma publicar com 30 a 60 minutos de atraso. A página se atualiza sozinha a cada 5 minutos.</div>
+  <div>Painel desenvolvido por <strong>Simone de Figueiredo Cunha</strong> com auxílio de IA.</div>
+</footer>
+</div>
+
+<script>
+const URL_API='https://ekfyviemlszovciroacn.supabase.co/rest/v1/';
+const KEY='sb_publishable_Bhsw4dhgFwk0jno5kZMeYQ_3tfouypX';
+const CORES=['--s0','--s1','--s2','--s3'];
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt=(v,d=2)=>v==null||isNaN(v)?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const hora=iso=>iso?new Date(iso).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+const NS='http://www.w3.org/2000/svg';
+const el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;};
+async function api(p){const r=await fetch(URL_API+p,{headers:{apikey:KEY}});if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}
+
+function cards(sit,res){
+  const box=document.getElementById('cards');box.innerHTML='';
+  const by=Object.fromEntries(res.map(r=>[r.codigo,r]));
+  for(const s of sit){
+    const velhas=s.rio==='Rio das Velhas', ref=velhas?by['41200430']:by['41210001'];
+    const c=document.createElement('section');c.className='card rio';
+    c.style.setProperty('--c',css(CORES[s.nivel_alerta]||'--s0'));
+    const varr=s.variacao_3h_cm;
+    const tend=varr==null?'—':(varr>5?'subindo ':varr<-5?'descendo ':'estável ')+'('+(varr>0?'+':'')+fmt(varr/100)+' m em 3 h)';
+    c.innerHTML=`<h2>${s.rio}</h2><span class="badge"></span>
+      <div class="big">${fmt(s.nivel_referencia_cm/100)} m <small>${velhas?'em Raposos':'em Caeté'}</small></div>
+      <dl class="kv"><dt>Tendência</dt><dd>${tend}</dd>
+      <dt>Chuva 6 h / 24 h</dt><dd>${fmt(ref?.chuva_6h,0)} / ${fmt(ref?.chuva_24h,0)} mm</dd>
+      <dt>Última leitura</dt><dd>${hora(s.ultima_leitura)}</dd></dl>
+      <p class="motivo"></p>`;
+    c.querySelector('.badge').textContent=s.estagio;
+    c.querySelector('.motivo').textContent=s.motivo;
+    box.appendChild(c);
+  }
+}
+
+function grafico(host,serie,opt){
+  host.innerHTML='';
+  const W=Math.max(320,Math.round(host.clientWidth||860)),R=W<600?92:150,L=44,T=12,ch=W<600?150:170,H=ch+(opt.chuva?110:50);
+  const t1=Date.now(),t0=t1-72*3600e3,x=t=>L+(t-t0)/(t1-t0)*(W-L-R);
+  const nv=serie.filter(p=>p.nivel_cm!=null);
+  const vmax=Math.max(opt.ymin, ...nv.map(p=>p.nivel_cm))*1.08;
+  const y=v=>T+ch-v/vmax*ch;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':opt.titulo});
+  const step=vmax>500?200:vmax>200?100:50;
+  for(let g=0;g<=vmax;g+=step){el('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:css('--grid')},svg);const t=el('text',{x:L-6,y:y(g)+4,'text-anchor':'end'},svg);t.textContent=fmt(g/100,1)+' m';}
+  for(let d=new Date(t0);d<=t1;d=new Date(d.getTime()+3600e3)){const hh=Number(d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}));if(hh%(W<600?24:12))continue;const t=el('text',{x:x(d),y:T+ch+16,'text-anchor':'middle'},svg);t.textContent=d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit'})+' '+String(hh).padStart(2,'0')+'h';}
+  (opt.limites||[]).forEach(([v,lab,cor])=>{if(v>vmax)return;el('line',{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:css(cor),'stroke-dasharray':'5 4','stroke-width':1.5},svg);const t=el('text',{x:W-R+6,y:y(v)+4},svg);t.textContent=W<600?fmt(v/100)+' m':fmt(v/100)+' m · '+lab;});
+  let p='';nv.forEach(q=>{p+=(p?'L':'M')+x(new Date(q.datahora))+','+y(q.nivel_cm);});
+  el('path',{d:p,fill:'none',stroke:css(opt.cor),'stroke-width':2.4},svg);
+  if(nv.length){const u=nv[nv.length-1];el('circle',{cx:x(new Date(u.datahora)),cy:y(u.nivel_cm),r:4,fill:css(opt.cor)},svg);}
+  if(opt.chuva){
+    // chuva por hora
+    const hrs={};serie.forEach(q=>{if(q.chuva_mm){const k=Math.floor(new Date(q.datahora)/3600e3);hrs[k]=(hrs[k]||0)+q.chuva_mm;}});
+    const cy0=T+ch+28,chh=H-cy0-8,cm=Math.max(20,...Object.values(hrs));
+    const bw=(W-L-R)/72*0.8;
+    Object.entries(hrs).forEach(([k,v])=>{const h=v/cm*chh;el('rect',{x:x(k*3600e3)-bw/2,y:cy0+chh-h,width:bw,height:h,fill:css('--chuva'),rx:1},svg);});
+    el('line',{x1:L,x2:W-R,y1:cy0+chh,y2:cy0+chh,stroke:css('--grid')},svg);
+    const t2=el('text',{x:W-R+6,y:cy0+12},svg);t2.textContent='Chuva por hora';
+    const t=el('text',{x:W-R+6,y:cy0+26},svg);t.textContent='(máx. '+fmt(cm,0)+' mm)';
+  }
+  if(!nv.length){const t=el('text',{x:W/2,y:T+ch/2,'text-anchor':'middle'},svg);t.textContent='Sem leituras nas últimas 72 h';}
+  host.appendChild(svg);
+}
+
+function tabela(res){
+  const t=document.getElementById('tab');
+  t.innerHTML='<thead><tr><th>Estação</th><th>Rio</th><th class="n">Nível</th><th class="n">Máx. 24 h</th><th class="n">Chuva 1 h</th><th class="n">6 h</th><th class="n">24 h</th><th class="n">72 h</th><th>Última leitura</th></tr></thead><tbody>'+
+   res.map(r=>`<tr><td>${r.nome}</td><td>${r.rio}</td><td class="n">${fmt(r.nivel_cm/100)} m</td><td class="n">${fmt(r.max_24h_cm/100)} m</td><td class="n">${fmt(r.chuva_1h,1)}</td><td class="n">${fmt(r.chuva_6h,0)}</td><td class="n">${fmt(r.chuva_24h,0)}</td><td class="n">${fmt(r.chuva_72h,0)}</td><td>${hora(r.ultima_leitura)}</td></tr>`).join('')+'</tbody>';
+}
+
+async function carregar(){
+  const st=document.getElementById('stxt'),dot=document.getElementById('dot');
+  try{
+    const desde=new Date(Date.now()-72*3600e3).toISOString();
+    const [sit,res,lr,lc,col]=await Promise.all([
+      api('situacao_rios?select=*'),
+      api('ana_resumo?select=*'),
+      api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41200430&datahora=gte.${desde}&order=datahora`),
+      api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41210001&datahora=gte.${desde}&order=datahora`),
+      api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1')]);
+    cards(sit,res);
+    grafico(document.getElementById('gvelhas'),lr,{cor:'--velhas',ymin:500,titulo:'Nível do Rio das Velhas em Raposos nas últimas 72 horas',
+      limites:[[450,'atenção','--s1'],[565,'Roças Grandes','--s2'],[670,'Caieira / Ponte','--s3']]});
+    grafico(document.getElementById('gsabara'),lc,{cor:'--sabara',ymin:150,chuva:true,titulo:'Chuva e nível em Caeté nas últimas 72 horas',
+      limites:[[237,'pico de dez/2022','--s2']]});
+    tabela(res);
+    const ult=res.map(r=>r.ultima_leitura).filter(Boolean).sort().pop();
+    const atraso=ult?(Date.now()-new Date(ult))/60000:Infinity;
+    dot.className='dot'+(atraso>180?' stale':'');
+    st.textContent=`Leitura mais recente da ANA: ${hora(ult)}`+(atraso>180?' — a ANA está sem dados novos há mais de 3 horas.':'')+` · Página atualizada às ${new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}`;
+  }catch(e){
+    dot.className='dot stale';st.innerHTML='<span class="erro">Não foi possível carregar os dados agora.</span> Tentando de novo em 5 minutos.';
+  }
+}
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(carregar,400);});
+carregar();setInterval(carregar,5*60e3);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)carregar();});
+</script>
+</body>
+</html>
