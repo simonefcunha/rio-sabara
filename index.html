@@ -42,6 +42,9 @@ th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
 th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tbl{overflow-x:auto}
+table.tempo td,table.tempo th{white-space:nowrap}
+.cond{display:inline-flex;align-items:center;gap:6px}
+.prevbox{padding:10px 14px;border-radius:6px;border-left:4px solid var(--c);background:var(--bg);font-size:14px;margin:0}
 .aviso{border-left:4px solid var(--s2);font-size:14px}
 .aviso p{margin:0}
 footer{font-size:13px;color:var(--muted);display:grid;gap:6px}
@@ -64,9 +67,23 @@ a{color:var(--velhas)}
 <div class="cards" id="cards"></div>
 
 <section class="card">
+  <h3>Tempo agora e previsão de chuva</h3>
+  <p class="muted" style="margin:0">Previsão do modelo Open-Meteo para as cidades da bacia, atualizada de hora em hora. As barras mostram a chuva prevista hora a hora nas próximas 48 horas. Previsão de chuva forte em Caeté e rio acima é o primeiro sinal de cheia, antes de os rios subirem.</p>
+  <div id="prevaviso"></div>
+  <div class="tbl"><table id="tabtempo" class="tempo"></table></div>
+  <p class="muted" style="margin:0;font-size:13px">Previsão é estimativa e erra, principalmente em tempestades de verão, que são muito localizadas. O que conta para alerta são as medições dos rios e pluviômetros acima. Fonte: Open-Meteo (modelos meteorológicos globais e regionais).</p>
+</section>
+
+<section class="card">
   <h3>Rio das Velhas em Raposos: últimas 72 horas</h3>
   <p class="muted" style="margin:0">Raposos fica logo acima de Sabará. As linhas tracejadas são os níveis em que, nas cheias passadas, a água chegou a cada lugar.</p>
   <div id="gvelhas"></div>
+</section>
+
+<section class="card">
+  <h3>De onde vem a água? Represas rio acima × Raposos</h3>
+  <p class="muted" style="margin:0">Quanto cada régua subiu nas últimas 72 horas, contando do nível mais baixo do período. Itabirito e Rio do Peixe ficam logo abaixo de pequenas usinas (PCHs) rio acima. Se uma represa soltasse água, essas linhas subiriam primeiro e de repente, e Rio Acima viria em seguida. Se só Raposos sobe, a água vem da chuva perto de Sabará.</p>
+  <div id="gorigem"></div>
 </section>
 
 <section class="card">
@@ -153,16 +170,73 @@ function tabela(res){
    res.map(r=>`<tr><td>${r.nome}</td><td>${r.rio}</td><td class="n">${fmt(r.nivel_cm/100)} m</td><td class="n">${fmt(r.max_24h_cm/100)} m</td><td class="n">${fmt(r.chuva_1h,1)}</td><td class="n">${fmt(r.chuva_6h,0)}</td><td class="n">${fmt(r.chuva_24h,0)}</td><td class="n">${fmt(r.chuva_72h,0)}</td><td>${hora(r.ultima_leitura)}</td></tr>`).join('')+'</tbody>';
 }
 
+function origem(host,dados){
+  host.innerHTML='';
+  const EST=[['41180001','Itabirito (abaixo da PCH Rio de Pedras)','--s1'],['41193000','Rio do Peixe (abaixo da PCH)','--s2'],['41195050','Rio Acima','--s0'],['41200430','Raposos','--velhas']];
+  const W=Math.max(320,Math.round(host.clientWidth||860)),R=W<600?110:220,L=44,T=12,ch=W<600?150:170,H=ch+40;
+  const t1=Date.now(),t0=t1-72*3600e3,x=t=>L+(t-t0)/(t1-t0)*(W-L-R);
+  const ser=EST.map(([c,n,cor])=>{const p=dados.filter(q=>q.estacao===c);const mn=p.length?Math.min(...p.map(q=>q.nivel_cm)):0;return {n,cor,p:p.map(q=>({t:new Date(q.datahora),v:q.nivel_cm-mn}))};});
+  const vmax=Math.max(100,...ser.flatMap(s=>s.p.map(q=>q.v)))*1.1, y=v=>T+ch-v/vmax*ch;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Subida de cada régua nas últimas 72 horas'});
+  const step=vmax>400?200:vmax>200?100:50;
+  for(let g=0;g<=vmax;g+=step){el('line',{x1:L,x2:W-R,y1:y(g),y2:y(g),stroke:css('--grid')},svg);const t=el('text',{x:L-6,y:y(g)+4,'text-anchor':'end'},svg);t.textContent='+'+fmt(g/100,1)+' m';}
+  for(let d=new Date(t0);d<=t1;d=new Date(d.getTime()+3600e3)){const hh=Number(d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}));if(hh%(W<600?24:12))continue;const t=el('text',{x:x(d),y:T+ch+16,'text-anchor':'middle'},svg);t.textContent=d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit'})+' '+String(hh).padStart(2,'0')+'h';}
+  const ys=[];
+  ser.forEach(s=>{if(!s.p.length)return;let p='';s.p.forEach(q=>{p+=(p?'L':'M')+x(q.t)+','+y(q.v);});el('path',{d:p,fill:'none',stroke:css(s.cor),'stroke-width':2.2},svg);
+    const u=s.p[s.p.length-1];let yy=y(u.v)+4;while(ys.some(o=>Math.abs(o-yy)<13))yy+=13;ys.push(yy);
+    const t=el('text',{x:W-R+6,y:yy,class:'lab'},svg);t.style.fill=css(s.cor);t.textContent=(W<600?s.n.split(' (')[0]:s.n);});
+  host.appendChild(svg);
+}
+
+const CIDADES=[['Sabará',-19.886,-43.807],['Caeté',-19.880,-43.669],['Raposos',-19.966,-43.804],['Nova Lima',-19.985,-43.847],['Rio Acima',-20.088,-43.788],['Itabirito',-20.253,-43.801]];
+const WMO={0:'Céu limpo',1:'Poucas nuvens',2:'Parcialmente nublado',3:'Nublado',45:'Neblina',48:'Neblina',51:'Garoa fraca',53:'Garoa',55:'Garoa forte',61:'Chuva fraca',63:'Chuva',65:'Chuva forte',66:'Chuva gelada',67:'Chuva gelada',71:'Neve',73:'Neve',75:'Neve',80:'Pancadas fracas',81:'Pancadas de chuva',82:'Pancadas fortes',95:'Trovoadas',96:'Trovoadas com granizo',99:'Trovoadas com granizo'};
+const ICO=c=>c==null?'':c<=1?'☀️':c<=2?'⛅':c<=48?'☁️':c<=67?'🌧️':c<=82?'🌦️':'⛈️';
+let tempoCache=null,tempoEm=0;
+async function tempo(){
+  const box=document.getElementById('tabtempo'),av=document.getElementById('prevaviso');
+  try{
+    if(!tempoCache||Date.now()-tempoEm>30*60e3){
+      const u='https://api.open-meteo.com/v1/forecast?latitude='+CIDADES.map(c=>c[1]).join(',')+'&longitude='+CIDADES.map(c=>c[2]).join(',')+
+        '&current=temperature_2m,precipitation,weather_code,relative_humidity_2m&hourly=precipitation,precipitation_probability&forecast_days=3&timezone=America%2FSao_Paulo';
+      const r=await fetch(u);if(!r.ok)throw new Error(r.status);let j=await r.json();if(!Array.isArray(j))j=[j];tempoCache=j;tempoEm=Date.now();
+    }
+    const agora=Date.now();const W=150,H=26;
+    const linhas=tempoCache.map((d,k)=>{
+      const nome=CIDADES[k][0],cur=d.current||{};
+      const hs=d.hourly.time.map((t,i)=>({t:new Date(t+':00-03:00').getTime(),p:d.hourly.precipitation[i]||0,pr:d.hourly.precipitation_probability?.[i]}))
+        .filter(h=>h.t>=agora-3600e3&&h.t<agora+48*3600e3);
+      const s24=hs.filter(h=>h.t<agora+24*3600e3).reduce((a,h)=>a+h.p,0), s48=hs.reduce((a,h)=>a+h.p,0);
+      let m6=0;for(let i=0;i<hs.length;i++){m6=Math.max(m6,hs.slice(i,i+6).reduce((a,h)=>a+h.p,0));}
+      const prob=Math.max(0,...hs.filter(h=>h.t<agora+24*3600e3).map(h=>h.pr??0));
+      const mx=Math.max(5,...hs.map(h=>h.p)),bw=W/48;
+      const bars=hs.slice(0,48).map((h,i)=>{const hh=h.p/mx*(H-2);return h.p>0?`<rect x="${(i*bw).toFixed(1)}" y="${(H-hh).toFixed(1)}" width="${(bw*0.8).toFixed(1)}" height="${hh.toFixed(1)}" rx="0.5" fill="${css('--chuva')}"/>`:'';}).join('');
+      const spark=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Chuva prevista hora a hora em ${nome}"><line x1="0" x2="${W}" y1="${H-0.5}" y2="${H-0.5}" stroke="${css('--grid')}"/><line x1="${W/2}" x2="${W/2}" y1="0" y2="${H}" stroke="${css('--grid')}" stroke-dasharray="2 2"/>${bars}</svg>`;
+      return {nome,cur,s24,s48,m6,prob,spark};
+    });
+    box.innerHTML='<thead><tr><th>Cidade</th><th class="n">Chuva prev. 24 h</th><th>Agora</th><th class="n">Temp.</th><th class="n">Chovendo</th><th class="n">Prev. 48 h</th><th class="n">Chance de chuva</th><th>Próximas 48 h</th></tr></thead><tbody>'+
+      linhas.map(l=>`<tr><td>${l.nome}</td><td class="n"><b>${fmt(l.s24,0)} mm</b></td><td><span class="cond">${ICO(l.cur.weather_code)} ${WMO[l.cur.weather_code]||'—'}</span></td><td class="n">${fmt(l.cur.temperature_2m,0)}°C</td><td class="n">${fmt(l.cur.precipitation,1)} mm</td><td class="n">${fmt(l.s48,0)} mm</td><td class="n">${fmt(l.prob,0)}%</td><td>${l.spark}</td></tr>`).join('')+'</tbody>';
+    // aviso de previsão (regras de partida do painel)
+    const cae=linhas.find(l=>l.nome==='Caeté'), cima=linhas.filter(l=>['Raposos','Nova Lima','Rio Acima','Itabirito'].includes(l.nome));
+    const media72=cima.reduce((a,l)=>a+l.s48,0)/cima.length;
+    let nivel=0,txt='Nenhuma chuva forte prevista para a bacia nas próximas 48 horas.';
+    if(cae.m6>=60){nivel=2;txt=`Previsão de até ${fmt(cae.m6,0)} mm em 6 horas em Caeté. Nas cheias passadas, 60 mm em 6 h na bacia levaram o Rio Sabará a sair do leito em 2 a 4 horas. Acompanhe o sensor da Av. Longitudinal.`;}
+    else if(cae.m6>=30){nivel=1;txt=`Previsão de até ${fmt(cae.m6,0)} mm em 6 horas em Caeté. Isso já fez o Rio Sabará subir bastante em eventos passados.`;}
+    if(media72>=120){nivel=Math.max(nivel,1);txt+=` Previsão de ${fmt(media72,0)} mm em 48 h rio acima (média de Raposos, Nova Lima, Rio Acima e Itabirito): o Rio das Velhas pode subir nos próximos dias.`;}
+    av.innerHTML=`<p class="prevbox" style="--c:${css(CORES[nivel])}"></p>`;av.firstChild.textContent=txt;
+  }catch(e){box.innerHTML='<tbody><tr><td class="erro">Não foi possível carregar a previsão do tempo agora.</td></tr></tbody>';av.innerHTML='';}
+}
+
 async function carregar(){
   const st=document.getElementById('stxt'),dot=document.getElementById('dot');
   try{
     const desde=new Date(Date.now()-72*3600e3).toISOString();
-    const [sit,res,lr,lc,col]=await Promise.all([
+    const [sit,res,lr,lc,col,lo]=await Promise.all([
       api('situacao_rios?select=*'),
       api('ana_resumo?select=*'),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41200430&datahora=gte.${desde}&order=datahora`),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm,estacao&estacao=in.(41210001,315670023H)&datahora=gte.${desde}&order=datahora`),
-      api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1')]);
+      api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1'),
+      api(`ana_leituras?select=datahora,nivel_cm,estacao&estacao=in.(41180001,41193000,41195050,41200430)&nivel_cm=not.is.null&datahora=gte.${desde}&order=datahora`)]);
     cards(sit,res);
     grafico(document.getElementById('gvelhas'),lr,{cor:'--velhas',ymin:500,titulo:'Nível do Rio das Velhas em Raposos nas últimas 72 horas',
       limites:[[450,'atenção','--s1'],[565,'Roças Grandes','--s2'],[670,'Caieira / Ponte','--s3']]});
@@ -171,6 +245,7 @@ async function carregar(){
     serieSab.sort((x,y)=>new Date(x.datahora)-new Date(y.datahora));
     grafico(document.getElementById('gsabara'),serieSab,{cor:'--sabara',ymin:sens.length?500:150,chuva:true,chuvaLab:'Chuva em Caeté',titulo:'Nível do Rio Sabará e chuva em Caeté nas últimas 72 horas',
       limites:sens.length?[[269,'atenção','--s1'],[359,'alerta','--s2'],[448,'transbordamento','--s3']]:[[237,'pico de dez/2022','--s2']]});
+    origem(document.getElementById('gorigem'),lo);
     tabela(res);
     const ult=res.map(r=>r.ultima_leitura).filter(Boolean).sort().pop();
     const atraso=ult?(Date.now()-new Date(ult))/60000:Infinity;
@@ -181,7 +256,7 @@ async function carregar(){
   }
 }
 let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(carregar,400);});
-carregar();setInterval(carregar,5*60e3);
+carregar();tempo();setInterval(()=>{carregar();tempo();},5*60e3);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)carregar();});
 </script>
 </body>
