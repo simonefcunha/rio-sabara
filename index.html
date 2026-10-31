@@ -92,8 +92,8 @@ a{color:var(--velhas)}
     <li><b>Rio das Velhas, em Rio Acima</b>, depois que esses dois rios já entraram nele</li>
     <li><b>Rio das Velhas, em Raposos</b>, a última régua antes de Sabará</li>
   </ol>
-  <p class="muted" style="margin:0">O gráfico mostra quanto cada régua subiu nos últimos 3 dias. <b>Se uma usina soltasse água</b>, as réguas 1 ou 2 subiriam primeiro e de repente, e as outras viriam depois, na ordem. <b>Se só Raposos sobe</b>, a água vem da chuva perto de Sabará.</p>
-  <p class="prevbox" id="usinastatus" style="--c:var(--s0)">Verificando as usinas…</p>
+  <p class="muted" style="margin:0">O gráfico mostra quanto cada régua subiu nos últimos 3 dias. Quando as réguas 1 e 2 sobem primeiro, a água está vindo de cima (chuva lá ou operação das usinas) e chega a Raposos horas depois. <b>Quando só Raposos sobe</b>, a água vem da chuva perto de Sabará. As réguas mostram o nível, não a operação das comportas; esse registro é da própria usina.</p>
+  <p class="prevbox" id="usinastatus" style="--c:var(--s0)">Lendo as réguas das usinas…</p>
   <div id="gorigem"></div>
 </section>
 
@@ -240,35 +240,40 @@ async function tempo(){
 }
 
 function usinas(au){
-  const box=document.getElementById('usinas'),st=document.getElementById('usinastatus');
-  if(!au){st.textContent='Não foi possível verificar as usinas agora.';return;}
-  const sus=au.filter(u=>u.suspeita);
-  if(sus.length){
-    box.innerHTML='';const sec=document.createElement('section');sec.className='card aviso';sec.style.borderLeftColor=css('--s1');
-    const p=document.createElement('p');
-    p.innerHTML='<strong>Possível descarga de usina rio acima.</strong> ';
-    p.append(sus.map(u=>`${u.nome} subiu ${fmt(u.subida_cm/100)} m em cerca de 1 hora, com só ${fmt(u.chuva_3h_local,0)} mm de chuva no local nas últimas 3 horas.`).join(' ')+
-      ' Isso pode ser abertura de comporta. Se for, a subida deve aparecer em Rio Acima em algumas horas e em Raposos de 3 a 8 horas depois. A régua não prova a abertura; só o registro da usina confirma.');
-    sec.appendChild(p);box.appendChild(sec);
-    st.style.setProperty('--c',css('--s1'));st.textContent='Atenção: subida brusca sem chuva detectada em '+sus.map(u=>u.nome).join(' e ')+'.';
-  }else{
-    box.innerHTML='';st.style.setProperty('--c',css('--s0'));
-    st.textContent='Nenhuma subida brusca nas usinas nas últimas 3 horas. O aviso aparece aqui e no topo da página se uma delas subir 40 cm ou mais em cerca de 1 hora sem chuva forte no local.';
-  }
+  const st=document.getElementById('usinastatus');
+  if(!au){st.textContent='Não foi possível ler as réguas das usinas agora.';return;}
+  const sub=au.filter(u=>u.subida_cm>=40);
+  if(!sub.length){st.style.setProperty('--c',css('--s0'));
+    st.textContent='Réguas das usinas sem subida rápida nas últimas 3 horas.';return;}
+  st.style.setProperty('--c',css('--s1'));
+  st.textContent=sub.map(u=>`${u.nome}: subiu ${fmt(u.subida_cm/100)} m em cerca de 1 hora, com ${fmt(u.chuva_3h_local,0)} mm de chuva no local nas últimas 3 horas.`).join(' ')+
+    (sub.some(u=>u.suspeita)?' Como choveu pouco ali, a subida pode vir de chuva mais acima ou de operação da usina; as réguas não permitem saber qual.':' A subida acompanha a chuva no local.');
+}
+function aguaChegando(ar){
+  const box=document.getElementById('usinas');box.innerHTML='';
+  const a=ar&&ar[0];if(!a||!a.ativo)return;
+  const partes=[];
+  if(a.subida_rio_acima_3h_cm>=60)partes.push(`O Rio das Velhas em Rio Acima subiu ${fmt(a.subida_rio_acima_3h_cm/100)} m nas últimas 3 horas.`);
+  if(a.subida_usina_cm)partes.push(`A régua de ${a.usinas} subiu ${fmt(a.subida_usina_cm/100)} m em cerca de 1 hora.`);
+  const sec=document.createElement('section');sec.className='card aviso';sec.style.borderLeftColor=css('--s1');
+  const p=document.createElement('p');p.innerHTML='<strong>Subida rápida rio acima.</strong> ';
+  p.append(partes.join(' ')+' Essa água costuma chegar a Raposos de 3 a 8 horas depois, e a Sabará logo em seguida. Acompanhe o nível em Raposos nos cartões abaixo.');
+  sec.appendChild(p);box.appendChild(sec);
 }
 
 async function carregar(){
   const st=document.getElementById('stxt'),dot=document.getElementById('dot');
   try{
     const desde=new Date(Date.now()-72*3600e3).toISOString();
-    const [sit,res,lr,lc,col,lo,au]=await Promise.all([
+    const [sit,res,lr,lc,col,lo,au,ar]=await Promise.all([
       api('situacao_rios?select=*'),
       api('ana_resumo?select=*'),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41200430&datahora=gte.${desde}&order=datahora`),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm,estacao&estacao=in.(41210001,315670023H)&datahora=gte.${desde}&order=datahora`),
       api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1'),
       api(`ana_leituras?select=datahora,nivel_cm,estacao&estacao=in.(41180500,41193000,41195050,41200430)&nivel_cm=not.is.null&datahora=gte.${desde}&order=datahora`),
-      api('alerta_usinas?select=*').catch(()=>null)]);
+      api('alerta_usinas?select=*').catch(()=>null),
+      api('alerta_rio_acima?select=*').catch(()=>null)]);
     cards(sit,res);
     grafico(document.getElementById('gvelhas'),lr,{cor:'--velhas',ymin:500,titulo:'Nível do Rio das Velhas em Raposos nas últimas 72 horas',
       limites:[[450,'atenção','--s1'],[565,'Roças Grandes','--s2'],[670,'Caieira / Ponte','--s3']]});
@@ -279,6 +284,7 @@ async function carregar(){
       limites:sens.length?[[269,'atenção','--s1'],[359,'alerta','--s2'],[448,'transbordamento','--s3']]:[[237,'pico de dez/2022','--s2']]});
     origem(document.getElementById('gorigem'),lo);
     usinas(au);
+    aguaChegando(ar);
     tabela(res);
     const ult=res.map(r=>r.ultima_leitura).filter(Boolean).sort().pop();
     const atraso=ult?(Date.now()-new Date(ult))/60000:Infinity;
