@@ -42,6 +42,8 @@ th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
 th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tbl{overflow-x:auto}
+.leg{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:2px;font-size:13px}.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+.caminho{margin:0;padding-left:22px;display:grid;gap:2px;font-size:14px}
 table.tempo td,table.tempo th{white-space:nowrap}
 .cond{display:inline-flex;align-items:center;gap:6px}
 .prevbox{padding:10px 14px;border-radius:6px;border-left:4px solid var(--c);background:var(--bg);font-size:14px;margin:0}
@@ -75,20 +77,27 @@ a{color:var(--velhas)}
 </section>
 
 <section class="card">
-  <h3>Rio das Velhas em Raposos: últimas 72 horas</h3>
+  <h3>Rio das Velhas, medido em Raposos: últimas 72 horas</h3>
   <p class="muted" style="margin:0">Raposos fica logo acima de Sabará. As linhas tracejadas são os níveis em que, nas cheias passadas, a água chegou a cada lugar.</p>
   <div id="gvelhas"></div>
 </section>
 
 <section class="card">
-  <h3>De onde vem a água? Represas rio acima × Raposos</h3>
-  <p class="muted" style="margin:0">Quanto cada régua subiu nas últimas 72 horas, contando do nível mais baixo do período. Itabirito e Rio do Peixe ficam logo abaixo de pequenas usinas (PCHs) rio acima. Se uma represa soltasse água, essas linhas subiriam primeiro e de repente, e Rio Acima viria em seguida. Se só Raposos sobe, a água vem da chuva perto de Sabará.</p>
+  <h3>A água vem das represas ou da chuva perto de Sabará?</h3>
+  <p class="muted" style="margin:0">O Rio das Velhas passa por estas réguas antes de chegar a Sabará. Duas ficam em rios que deságuam nele, junto a pequenas usinas com represa (PCHs):</p>
+  <ol class="caminho">
+    <li><b>Rio Itabirito, em Itabirito</b>, na usina PCH Rio de Pedras (Cemig)</li>
+    <li><b>Rio do Peixe, em Nova Lima</b>, logo abaixo de uma usina (PCH)</li>
+    <li><b>Rio das Velhas, em Rio Acima</b>, depois que esses dois rios já entraram nele</li>
+    <li><b>Rio das Velhas, em Raposos</b>, a última régua antes de Sabará</li>
+  </ol>
+  <p class="muted" style="margin:0">O gráfico mostra quanto cada régua subiu nos últimos 3 dias. <b>Se uma usina soltasse água</b>, as réguas 1 ou 2 subiriam primeiro e de repente, e as outras viriam depois, na ordem. <b>Se só Raposos sobe</b>, a água vem da chuva perto de Sabará.</p>
   <div id="gorigem"></div>
 </section>
 
 <section class="card">
-  <h3>Rio Sabará na ponte da Av. Longitudinal: últimas 72 horas</h3>
-  <p class="muted" style="margin:0">Sensor do Cemaden dentro de Sabará. As linhas tracejadas são as cotas oficiais do Cemaden para este ponto. As barras são a chuva por hora em Caeté, na cabeceira: o Rio Sabará costuma subir 2 a 4 horas depois de chuva forte lá.</p>
+  <h3>Rio Sabará, medido em Sabará (ponte da Av. Longitudinal): últimas 72 horas</h3>
+  <p class="muted" style="margin:0">Sensor do Cemaden dentro de Sabará. As linhas tracejadas são as cotas oficiais do Cemaden para este ponto. As barras são a chuva por hora em Caeté, na cabeceira do rio (Ribeirão Caeté): o Rio Sabará costuma subir 2 a 4 horas depois de chuva forte lá.</p>
   <div id="gsabara"></div>
 </section>
 
@@ -98,7 +107,7 @@ a{color:var(--velhas)}
 </section>
 
 <footer>
-  <div>Dados: ANA (Agência Nacional de Águas), estações telemétricas 41195050 Rio Acima, 41200430 Raposos e 41210001 Caeté; e Cemaden, estação hidrológica 315670023H Ribeirão Sabará (Av. Longitudinal). Coleta automática a cada 15 minutos; a ANA costuma publicar com 30 a 60 minutos de atraso e o Cemaden envia o nível de hora em hora fora de eventos. A página se atualiza sozinha a cada 5 minutos.</div>
+  <div>Dados: ANA (Agência Nacional de Águas), estações telemétricas 41195050 Rio das Velhas em Rio Acima, 41200430 Rio das Velhas em Raposos, 41210001 Ribeirão Caeté em Caeté, 41180500 Rio Itabirito na PCH Rio de Pedras e 41193000 Rio do Peixe em Nova Lima; e Cemaden, estação hidrológica 315670023H Ribeirão Sabará (Av. Longitudinal). Coleta automática a cada 15 minutos; a ANA costuma publicar com 30 a 60 minutos de atraso e o Cemaden envia o nível de hora em hora fora de eventos. A página se atualiza sozinha a cada 5 minutos.</div>
   <div>Painel desenvolvido por <strong>Simone de Figueiredo Cunha</strong> com auxílio de IA.</div>
 </footer>
 </div>
@@ -118,13 +127,13 @@ function cards(sit,res){
   const box=document.getElementById('cards');box.innerHTML='';
   const by=Object.fromEntries(res.map(r=>[r.codigo,r]));
   for(const s of sit){
-    const velhas=s.rio==='Rio das Velhas', ref=velhas?by['41200430']:(s.onde&&s.onde.includes('Cemaden')?by['315670023H']:by['41210001']);
+    const velhas=s.rio==='Rio das Velhas', ref=velhas?by['41200430']:(s.onde&&s.onde.includes('Longitudinal')?by['315670023H']:by['41210001']);
     const c=document.createElement('section');c.className='card rio';
     c.style.setProperty('--c',css(CORES[s.nivel_alerta]||'--s0'));
     const varr=s.variacao_3h_cm;
     const tend=varr==null?'—':(varr>5?'subindo ':varr<-5?'descendo ':'estável ')+'('+(varr>0?'+':'')+fmt(varr/100)+' m em 3 h)';
     c.innerHTML=`<h2>${s.rio}</h2><span class="badge"></span>
-      <div class="big">${fmt(s.nivel_referencia_cm/100)} m <small>${s.onde||''}</small></div>
+      <div class="big">${fmt(s.nivel_referencia_cm/100)} m <small>${!s.onde?'':s.onde.includes('Raposos')?'medido em Raposos':s.onde.includes('Longitudinal')?'medido em Sabará (Av. Longitudinal)':'medido em Caeté'}</small></div>
       <dl class="kv"><dt>Tendência</dt><dd>${tend}</dd>
       <dt>Chuva 6 h / 24 h</dt><dd>${fmt(ref?.chuva_6h,0)} / ${fmt(ref?.chuva_24h,0)} mm</dd>
       <dt>Última leitura</dt><dd>${hora(s.ultima_leitura)}</dd></dl>
@@ -164,16 +173,17 @@ function grafico(host,serie,opt){
   host.appendChild(svg);
 }
 
+const ORD=['315670023H','41210001','41200430','41195050','41193000','41180500'];
 function tabela(res){
   const t=document.getElementById('tab');
-  t.innerHTML='<thead><tr><th>Estação</th><th>Rio</th><th class="n">Nível</th><th class="n">Máx. 24 h</th><th class="n">Chuva 1 h</th><th class="n">6 h</th><th class="n">24 h</th><th class="n">72 h</th><th>Última leitura</th></tr></thead><tbody>'+
-   res.map(r=>`<tr><td>${r.nome}</td><td>${r.rio}</td><td class="n">${fmt(r.nivel_cm/100)} m</td><td class="n">${fmt(r.max_24h_cm/100)} m</td><td class="n">${fmt(r.chuva_1h,1)}</td><td class="n">${fmt(r.chuva_6h,0)}</td><td class="n">${fmt(r.chuva_24h,0)}</td><td class="n">${fmt(r.chuva_72h,0)}</td><td>${hora(r.ultima_leitura)}</td></tr>`).join('')+'</tbody>';
+  t.innerHTML='<thead><tr><th>Rio</th><th>Onde é medido</th><th class="n">Nível</th><th class="n">Máx. 24 h</th><th class="n">Chuva 1 h</th><th class="n">6 h</th><th class="n">24 h</th><th class="n">72 h</th><th>Última leitura</th></tr></thead><tbody>'+
+   res.slice().sort((a,b)=>ORD.indexOf(a.codigo)-ORD.indexOf(b.codigo)).map(r=>`<tr><td>${r.rio}</td><td>${r.nome}</td><td class="n">${fmt(r.nivel_cm/100)} m</td><td class="n">${fmt(r.max_24h_cm/100)} m</td><td class="n">${fmt(r.chuva_1h,1)}</td><td class="n">${fmt(r.chuva_6h,0)}</td><td class="n">${fmt(r.chuva_24h,0)}</td><td class="n">${fmt(r.chuva_72h,0)}</td><td>${hora(r.ultima_leitura)}</td></tr>`).join('')+'</tbody>';
 }
 
 function origem(host,dados){
   host.innerHTML='';
-  const EST=[['41180001','Itabirito (abaixo da PCH Rio de Pedras)','--s1'],['41193000','Rio do Peixe (abaixo da PCH)','--s2'],['41195050','Rio Acima','--s0'],['41200430','Raposos','--velhas']];
-  const W=Math.max(320,Math.round(host.clientWidth||860)),R=W<600?110:220,L=44,T=12,ch=W<600?150:170,H=ch+40;
+  const EST=[['41180500','1. Rio Itabirito em Itabirito (usina)','--s1'],['41193000','2. Rio do Peixe em Nova Lima (usina)','--s2'],['41195050','3. Rio das Velhas em Rio Acima','--s0'],['41200430','4. Rio das Velhas em Raposos','--velhas']];
+  const W=Math.max(320,Math.round(host.clientWidth||860)),mob=W<600,R=mob?12:250,L=44,T=12,ch=mob?150:170,H=ch+40;
   const t1=Date.now(),t0=t1-72*3600e3,x=t=>L+(t-t0)/(t1-t0)*(W-L-R);
   const ser=EST.map(([c,n,cor])=>{const p=dados.filter(q=>q.estacao===c);const mn=p.length?Math.min(...p.map(q=>q.nivel_cm)):0;return {n,cor,p:p.map(q=>({t:new Date(q.datahora),v:q.nivel_cm-mn}))};});
   const vmax=Math.max(100,...ser.flatMap(s=>s.p.map(q=>q.v)))*1.1, y=v=>T+ch-v/vmax*ch;
@@ -183,9 +193,10 @@ function origem(host,dados){
   for(let d=new Date(t0);d<=t1;d=new Date(d.getTime()+3600e3)){const hh=Number(d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}));if(hh%(W<600?24:12))continue;const t=el('text',{x:x(d),y:T+ch+16,'text-anchor':'middle'},svg);t.textContent=d.toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit'})+' '+String(hh).padStart(2,'0')+'h';}
   const ys=[];
   ser.forEach(s=>{if(!s.p.length)return;let p='';s.p.forEach(q=>{p+=(p?'L':'M')+x(q.t)+','+y(q.v);});el('path',{d:p,fill:'none',stroke:css(s.cor),'stroke-width':2.2},svg);
-    const u=s.p[s.p.length-1];let yy=y(u.v)+4;while(ys.some(o=>Math.abs(o-yy)<13))yy+=13;ys.push(yy);
-    const t=el('text',{x:W-R+6,y:yy,class:'lab'},svg);t.style.fill=css(s.cor);t.textContent=(W<600?s.n.split(' (')[0]:s.n);});
+    if(mob)return;const u=s.p[s.p.length-1];let yy=y(u.v)+4;while(ys.some(o=>Math.abs(o-yy)<13))yy+=13;ys.push(yy);
+    const t=el('text',{x:W-R+6,y:yy,class:'lab'},svg);t.style.fill=css(s.cor);t.textContent=s.n;});
   host.appendChild(svg);
+  if(mob||ser.some(s=>!s.p.length)){const ul=document.createElement('ul');ul.className='leg';ser.forEach(s=>{const li=document.createElement('li');li.innerHTML=`<i style="background:${css(s.cor)}"></i>`;li.append(s.n+(s.p.length?'':' — sem dado agora'));ul.appendChild(li);});host.appendChild(ul);}
 }
 
 const CIDADES=[['Sabará',-19.886,-43.807],['Caeté',-19.880,-43.669],['Raposos',-19.966,-43.804],['Nova Lima',-19.985,-43.847],['Rio Acima',-20.088,-43.788],['Itabirito',-20.253,-43.801]];
@@ -236,7 +247,7 @@ async function carregar(){
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41200430&datahora=gte.${desde}&order=datahora`),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm,estacao&estacao=in.(41210001,315670023H)&datahora=gte.${desde}&order=datahora`),
       api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1'),
-      api(`ana_leituras?select=datahora,nivel_cm,estacao&estacao=in.(41180001,41193000,41195050,41200430)&nivel_cm=not.is.null&datahora=gte.${desde}&order=datahora`)]);
+      api(`ana_leituras?select=datahora,nivel_cm,estacao&estacao=in.(41180500,41193000,41195050,41200430)&nivel_cm=not.is.null&datahora=gte.${desde}&order=datahora`)]);
     cards(sit,res);
     grafico(document.getElementById('gvelhas'),lr,{cor:'--velhas',ymin:500,titulo:'Nível do Rio das Velhas em Raposos nas últimas 72 horas',
       limites:[[450,'atenção','--s1'],[565,'Roças Grandes','--s2'],[670,'Caieira / Ponte','--s3']]});
