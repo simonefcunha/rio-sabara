@@ -66,6 +66,7 @@ a{color:var(--velhas)}
   <p><strong>Informativo, não é alerta oficial.</strong> Os estágios abaixo são regras de partida tiradas das cheias de 2020 a 2026 e podem errar. Em caso de risco, siga a Defesa Civil: ligue <strong>199</strong> e cadastre seu CEP para receber alertas por SMS enviando o CEP para <strong>40199</strong>.</p>
 </section>
 
+<div id="usinas"></div>
 <div class="cards" id="cards"></div>
 
 <section class="card">
@@ -92,6 +93,7 @@ a{color:var(--velhas)}
     <li><b>Rio das Velhas, em Raposos</b>, a última régua antes de Sabará</li>
   </ol>
   <p class="muted" style="margin:0">O gráfico mostra quanto cada régua subiu nos últimos 3 dias. <b>Se uma usina soltasse água</b>, as réguas 1 ou 2 subiriam primeiro e de repente, e as outras viriam depois, na ordem. <b>Se só Raposos sobe</b>, a água vem da chuva perto de Sabará.</p>
+  <p class="prevbox" id="usinastatus" style="--c:var(--s0)">Verificando as usinas…</p>
   <div id="gorigem"></div>
 </section>
 
@@ -237,17 +239,36 @@ async function tempo(){
   }catch(e){box.innerHTML='<tbody><tr><td class="erro">Não foi possível carregar a previsão do tempo agora.</td></tr></tbody>';av.innerHTML='';}
 }
 
+function usinas(au){
+  const box=document.getElementById('usinas'),st=document.getElementById('usinastatus');
+  if(!au){st.textContent='Não foi possível verificar as usinas agora.';return;}
+  const sus=au.filter(u=>u.suspeita);
+  if(sus.length){
+    box.innerHTML='';const sec=document.createElement('section');sec.className='card aviso';sec.style.borderLeftColor=css('--s1');
+    const p=document.createElement('p');
+    p.innerHTML='<strong>Possível descarga de usina rio acima.</strong> ';
+    p.append(sus.map(u=>`${u.nome} subiu ${fmt(u.subida_cm/100)} m em cerca de 1 hora, com só ${fmt(u.chuva_3h_local,0)} mm de chuva no local nas últimas 3 horas.`).join(' ')+
+      ' Isso pode ser abertura de comporta. Se for, a subida deve aparecer em Rio Acima em algumas horas e em Raposos de 3 a 8 horas depois. A régua não prova a abertura; só o registro da usina confirma.');
+    sec.appendChild(p);box.appendChild(sec);
+    st.style.setProperty('--c',css('--s1'));st.textContent='Atenção: subida brusca sem chuva detectada em '+sus.map(u=>u.nome).join(' e ')+'.';
+  }else{
+    box.innerHTML='';st.style.setProperty('--c',css('--s0'));
+    st.textContent='Nenhuma subida brusca nas usinas nas últimas 3 horas. O aviso aparece aqui e no topo da página se uma delas subir 40 cm ou mais em cerca de 1 hora sem chuva forte no local.';
+  }
+}
+
 async function carregar(){
   const st=document.getElementById('stxt'),dot=document.getElementById('dot');
   try{
     const desde=new Date(Date.now()-72*3600e3).toISOString();
-    const [sit,res,lr,lc,col,lo]=await Promise.all([
+    const [sit,res,lr,lc,col,lo,au]=await Promise.all([
       api('situacao_rios?select=*'),
       api('ana_resumo?select=*'),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm&estacao=eq.41200430&datahora=gte.${desde}&order=datahora`),
       api(`ana_leituras?select=datahora,nivel_cm,chuva_mm,estacao&estacao=in.(41210001,315670023H)&datahora=gte.${desde}&order=datahora`),
       api('ana_coletas?select=executado_em,ok&order=executado_em.desc&limit=1'),
-      api(`ana_leituras?select=datahora,nivel_cm,estacao&estacao=in.(41180500,41193000,41195050,41200430)&nivel_cm=not.is.null&datahora=gte.${desde}&order=datahora`)]);
+      api(`ana_leituras?select=datahora,nivel_cm,estacao&estacao=in.(41180500,41193000,41195050,41200430)&nivel_cm=not.is.null&datahora=gte.${desde}&order=datahora`),
+      api('alerta_usinas?select=*').catch(()=>null)]);
     cards(sit,res);
     grafico(document.getElementById('gvelhas'),lr,{cor:'--velhas',ymin:500,titulo:'Nível do Rio das Velhas em Raposos nas últimas 72 horas',
       limites:[[450,'atenção','--s1'],[565,'Roças Grandes','--s2'],[670,'Caieira / Ponte','--s3']]});
@@ -257,6 +278,7 @@ async function carregar(){
     grafico(document.getElementById('gsabara'),serieSab,{cor:'--sabara',ymin:sens.length?500:150,chuva:true,chuvaLab:'Chuva em Caeté',titulo:'Nível do Rio Sabará e chuva em Caeté nas últimas 72 horas',
       limites:sens.length?[[269,'atenção','--s1'],[359,'alerta','--s2'],[448,'transbordamento','--s3']]:[[237,'pico de dez/2022','--s2']]});
     origem(document.getElementById('gorigem'),lo);
+    usinas(au);
     tabela(res);
     const ult=res.map(r=>r.ultima_leitura).filter(Boolean).sort().pop();
     const atraso=ult?(Date.now()-new Date(ult))/60000:Infinity;
