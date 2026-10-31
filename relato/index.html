@@ -3,16 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Relato de Enchente · Sabará</title>
+<title>Rios de Sabará · Conte sua história</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <meta name="description" content="Conte o que você lembra das enchentes em Sabará: endereço, até onde a água chegou, horário. Pode mandar áudio e fotos.">
 <style>
-:root{--bg:#f3f4f6;--panel:#fff;--fg:#17202a;--muted:#5b6672;--line:#dde1e6;--accent:#2a78d6;--accent-fg:#fff;--ok:#1baf7a;--warn:#eb6834;--err:#c4314b;--chip:#eef3fb;
- --f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1418;--panel:#182027;--fg:#e8edf2;--muted:#9aa6b2;--line:#2a343d;--accent:#3987e5;--accent-fg:#fff;--ok:#199e70;--warn:#d95926;--err:#e05570;--chip:#1d2a38}}
-:root[data-theme="dark"]{--bg:#0f1418;--panel:#182027;--fg:#e8edf2;--muted:#9aa6b2;--line:#2a343d;--accent:#3987e5;--accent-fg:#fff;--ok:#199e70;--warn:#d95926;--err:#e05570;--chip:#1d2a38}
+:root{--bg:#ffffff;--panel:#ffffff;--fg:#0b1c2c;--muted:#53606c;--line:#dfe4ea;--accent:#1d5fa8;--accent-fg:#fff;--ok:#1baf7a;--warn:#eb6834;--err:#c4314b;--chip:#eef3fb;
+ --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171e;--panel:#141d25;--fg:#e8eef4;--muted:#9aa7b3;--line:#26323d;--accent:#6aa6e6;--accent-fg:#fff;--ok:#199e70;--warn:#d95926;--err:#e05570;--chip:#1d2a38}}
+:root[data-theme="dark"]{--bg:#10171e;--panel:#141d25;--fg:#e8eef4;--muted:#9aa7b3;--line:#26323d;--accent:#6aa6e6;--accent-fg:#fff;--ok:#199e70;--warn:#d95926;--err:#e05570;--chip:#1d2a38}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.5}
-.wrap{max-width:640px;margin:0 auto;padding:20px 16px 64px;display:grid;gap:16px}
+.wrap{max-width:640px;margin:0 auto;padding-block:20px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
 header h1{margin:2px 0 6px;font-size:26px;line-height:1.15}
 .eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 .muted{color:var(--muted)}
@@ -20,7 +23,7 @@ header h1{margin:2px 0 6px;font-size:26px;line-height:1.15}
 h2{margin:0;font-size:18px}
 label.f{display:grid;gap:6px;font-weight:600;font-size:15px}
 label.f small,.hint{font-weight:400;color:var(--muted);font-size:13px}
-input[type=text],input[type=tel],input[type=number],select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+input[type=text],input[type=tel],input[type=number],select,textarea{font:inherit;color:var(--fg);background:color-mix(in srgb,var(--fg) 4%,var(--bg));border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
 textarea{min-height:80px;resize:vertical}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
 fieldset{border:0;margin:0;padding:0;display:grid;gap:6px}
@@ -55,9 +58,32 @@ button:disabled{opacity:.55;cursor:not-allowed}
 footer{font-size:13px;color:var(--muted)}
 a{color:var(--accent)}
 [hidden]{display:none!important}
+.site{position:sticky;top:0;z-index:1200;background:var(--bg);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.site .in{max-width:960px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{font-weight:700;font-size:17px;color:var(--fg);text-decoration:none;padding-block:12px;white-space:nowrap}
+.brand span{color:var(--accent)}
+nav.abas{display:flex;gap:2px}
+nav.abas a{padding:15px 10px 13px;color:var(--muted);text-decoration:none;font-weight:700;font-size:15px;white-space:nowrap}
+nav.abas a:hover{color:var(--fg)}
+nav.abas a[aria-current]{color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}
+@media (max-width:680px){
+ nav.abas{position:fixed;left:0;right:0;bottom:0;z-index:1200;background:var(--bg);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+ nav.abas a{text-align:center;padding:13px 2px 12px;font-size:13px}
+ nav.abas a[aria-current]{box-shadow:inset 0 3px 0 var(--accent)}
+ body{padding-bottom:calc(52px + env(safe-area-inset-bottom,0px))}}
 </style>
 </head>
 <body>
+<header class="site"><div class="in">
+  <a class="brand" href="https://simonefcunha.github.io/rio-sabara/">Rios de <span>Sabará</span></a>
+  <nav class="abas" aria-label="Seções">
+    <a href="https://simonefcunha.github.io/rio-sabara/">Agora</a>
+    <a href="https://simonefcunha.github.io/rio-sabara/painel/#mapa">Mapa</a>
+    <a href="https://simonefcunha.github.io/rio-sabara/painel/#prever">Prever</a>
+    <a href="https://simonefcunha.github.io/rio-sabara/painel/#historico">Histórico</a>
+    <a href="https://simonefcunha.github.io/rio-sabara/relato/" aria-current="page">Contar</a>
+  </nav>
+</div></header>
 <div class="wrap">
 <header>
   <div class="eyebrow">Sabará · Enchentes</div>
